@@ -9,7 +9,9 @@ browser_lib = Selenium()
 
 def get_inputs():
     wi = WorkItems()
-    print(wi.get_input_work_item())
+    payload = wi.get_input_work_item()
+    print(payload)
+    return [payload["searchPhrase"], payload["numberOfMonths"], payload["categoryOrSections"]]
 
 
 def open_the_website(url):

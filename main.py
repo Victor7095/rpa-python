@@ -9,7 +9,7 @@ browser_lib = Selenium()
 
 def get_inputs():
     wi = WorkItems()
-    print(wi.current)
+    print(wi.get_input_work_item())
 
 
 def open_the_website(url):

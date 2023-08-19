@@ -1,5 +1,8 @@
 from RPA.Browser.Selenium import Selenium
 from RPA.Robocorp.WorkItems import WorkItems
+from RPA.Excel.Files import Files
+from selenium.webdriver.common.by import By
+import os
 
 browser_lib = Selenium()
 
@@ -34,10 +37,71 @@ def search_for(term):
 def sort_by_latest():
     browser_lib.select_from_list_by_value(
         "css:select[data-testid='SearchForm-sortBy']", "newest")
+    # WebDriverWait(browser_lib, 10).until(EC)
+    browser_lib.wait_until_element_does_not_contain(
+        "css:p[data-testid='SearchForm-status']", "Loading")
 
 
-def store_screenshot(filename):
-    browser_lib.screenshot(filename=filename)
+def get_news_raw_results():
+    elements = browser_lib.find_elements(
+        "css:ol[data-testid='search-results'] > li[data-testid='search-bodega-result']")
+
+    # Extract title, date, description, picture filename, count of search phrases in the title and description, True or False, depending on whether the title or description contains any amount of money
+    results = []
+    for element in elements:
+        print(element)
+        title = element.find_element(By.TAG_NAME,
+                                     "h4").text
+        print(title)
+        date = element.find_element(By.CSS_SELECTOR,
+                                    "span[data-testid='todays-date']").text
+        print(date)
+        description = element.find_element(By.CSS_SELECTOR,
+                                           "h4 + p").text
+        print(description)
+        picture = element.find_element(By.CSS_SELECTOR,
+                                       "figure[aria-label='media'] img").get_attribute("src")
+        print(picture)
+        count_of_search_phrases_in_title = 0
+        count_of_search_phrases_in_description = 0
+        contains_money = False
+        results.append([title, date, description, picture,
+                        count_of_search_phrases_in_title, count_of_search_phrases_in_description, contains_money])
+
+    return results
+
+
+def raw_data_to_list_of_dictionary(raw_data):
+    # Convert raw data to a list of dictionaries
+    results = []
+    for row in raw_data:
+        results.append({
+            "title": row[0],
+            "date": row[1],
+            "description": row[2],
+            "picture": row[3],
+            "count_of_search_phrases_in_title": row[4],
+            "count_of_search_phrases_in_description": row[5],
+            "contains_money": row[6]
+        })
+
+    return results
+
+
+def create_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+
+def write_excel_worksheet(path, worksheet, data):
+    create_dir("output")
+    lib = Files()
+    lib.create_workbook(path)
+    try:
+        lib.create_worksheet(worksheet, content=data, header=True)
+        lib.save_workbook()
+    finally:
+        lib.close_workbook()
 
 
 # Define a main() function that calls the other functions in order:
@@ -52,7 +116,13 @@ def main():
 
         sort_by_latest()
 
-        store_screenshot("output/screenshot.png")
+        raw_results = get_news_raw_results()
+
+        results = raw_data_to_list_of_dictionary(raw_results)
+        for result in results:
+            print(result)
+
+        write_excel_worksheet("output/results.xlsx", "Fresh News", results)
     finally:
         browser_lib.close_all_browsers()
 

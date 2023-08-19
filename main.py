@@ -7,6 +7,13 @@ import os
 browser_lib = Selenium()
 
 
+def get_inputs():
+    wi = WorkItems()
+    print(wi.current)
+    var = wi.get_work_item_payload()
+    print(var)
+
+
 def open_the_website(url):
     browser_lib.open_available_browser(
         url, options={"arguments": ["window-size=1920,1080"]})
@@ -129,4 +136,4 @@ def main():
 
 # Call the main() function, checking that we are running as a stand-alone script:
 if __name__ == "__main__":
-    main()
+    get_inputs()

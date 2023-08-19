@@ -1,9 +1,9 @@
 [
   {
     "payload": {
-      "Name": "Zoya Roche",
-      "Zip": 3013,
-      "Items": ["Sauce Labs Bolt T-Shirt", "Sauce Labs Fleece Jacket", "Sauce Labs Onesie"]
+      "searchPhrase": "Python",
+      "numberOfMonths": 3013,
+      "categoryOrSections": ["Art"]
     },
     "files": {}
   }

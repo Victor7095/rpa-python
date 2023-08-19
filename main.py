@@ -10,8 +10,6 @@ browser_lib = Selenium()
 def get_inputs():
     wi = WorkItems()
     print(wi.current)
-    var = wi.get_work_item_payload()
-    print(var)
 
 
 def open_the_website(url):
@@ -114,6 +112,8 @@ def write_excel_worksheet(path, worksheet, data):
 # Define a main() function that calls the other functions in order:
 def main():
     try:
+        get_inputs()
+
         open_the_website("https://www.nytimes.com/")
 
         click_agree_with_terms()
@@ -136,4 +136,4 @@ def main():
 
 # Call the main() function, checking that we are running as a stand-alone script:
 if __name__ == "__main__":
-    get_inputs()
+    main()

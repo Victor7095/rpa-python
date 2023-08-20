@@ -2,5 +2,6 @@
   "[python]": {
     "editor.defaultFormatter": "ms-python.autopep8",
     "editor.tabSize": 2
-  }
+  },
+  "python.analysis.autoImportCompletions": true
 }

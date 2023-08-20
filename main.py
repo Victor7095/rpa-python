@@ -2,7 +2,12 @@ from RPA.Browser.Selenium import Selenium
 from RPA.Robocorp.WorkItems import WorkItems
 from RPA.Excel.Files import Files
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.remote.webelement import WebElement
+
 from datetime import datetime
+import locators
 import os
 from dateutil.relativedelta import relativedelta
 
@@ -11,7 +16,7 @@ browser_lib = Selenium()
 
 default_inputs = {
     "searchPhrase": "russia",
-    "numberOfMonths": 12,
+    "numberOfMonths": 1,
     "categoryOrSections": "world"
 }
 
@@ -43,28 +48,28 @@ def get_inputs():
         print('Using default inputs')
         print(inputs)
 
-    max_date = calculate_maxdate(inputs["numberOfMonths"])
-    inputs["maxDate"] = max_date
+    min_date = calculate_mindate(inputs["numberOfMonths"])
+    inputs["minDate"] = min_date
     return inputs
 
 
-def calculate_maxdate(number_of_months):
+def calculate_mindate(number_of_months):
     today = datetime.today()
 
     # Subtract the number of months from today
-    max_date = today
+    min_date = today
 
-    # Set max date to the first day of the month
-    max_date = max_date.replace(day=1)
+    # Set min date to the first day of the month
+    min_date = min_date.replace(day=1)
 
-    # Set max date time to 00:00:00
-    max_date = max_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    # Set min date time to 00:00:00
+    min_date = min_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
     if number_of_months > 0:
         # Subtract the number of months from today
-        max_date = today - relativedelta(months=number_of_months)
+        min_date = today - relativedelta(months=number_of_months)
 
-    return max_date
+    return min_date
 
 
 def open_the_website(url):
@@ -73,13 +78,20 @@ def open_the_website(url):
 
 
 def click_agree_with_terms():
-    browser_lib.wait_until_page_contains_element(
-        "css:div#complianceOverlay")
-    click_button("css:div#complianceOverlay button[type='button']")
+    compliance_overlay_locator = locators.COMPLICANCE_OVERLAY_LOCATOR
+    browser_lib.wait_until_page_contains_element(compliance_overlay_locator)
+    compliance_overlay_button_locator = locators.COMPLICANCE_OVERLAY_BUTTON_LOCATOR
+    click_button(compliance_overlay_button_locator)
+
+
+def click_agree_with_cookie_policy():
+    accept_cookies_button_locator = locators.ACCEPT_COOKIES_BUTTON_LOCATOR
+    browser_lib.wait_until_page_contains_element(accept_cookies_button_locator)
+    click_button(accept_cookies_button_locator)
 
 
 def click_search_button():
-    button_locator = "css:button[data-testid='search-button']"
+    button_locator = locators.SEARCH_BUTTON_LOCATOR
     browser_lib.wait_until_page_contains_element(button_locator)
     click_button(button_locator)
 
@@ -89,21 +101,19 @@ def click_button(button_locator):
 
 
 def search_for(term):
-    input_field = "css:input[name='query']"
+    input_field = locators.INPUT_FIELD_LOCATOR
     browser_lib.input_text(input_field, term)
     browser_lib.press_keys(input_field, "ENTER")
 
 
 def sort_by_latest():
     browser_lib.select_from_list_by_value(
-        "css:select[data-testid='SearchForm-sortBy']", "newest")
-    # WebDriverWait(browser_lib, 10).until(EC)
+        locators.SORT_DROPDOWN_LOCATOR, "newest")
     browser_lib.wait_until_element_does_not_contain(
-        "css:p[data-testid='SearchForm-status']", "Loading")
+        locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
 
 
 def parse_raw_date(date):
-    print(date)
     # List of possible date formats
     # 'Jan. 7, 2022', 'Feb. 2, 2022', 'March 11, 2022, 'April 15, 2022' 'May 30, 2022', 'June 15, 2022', 'July 15, 2022', 'Aug. 15, 2022', 'Sept. 15, 2022', 'Oct. 15, 2022', 'Nov. 15, 2022', 'Dec. 15, 2022', 'Jan. 5', 'Feb. 5', 'March. 5', 'April 5', 'May 5', 'June 5', 'July 5', 'Aug. 5', 'Sept. 5', 'Oct. 5', 'Nov. 5', 'Dec. 5', '6h ago'
     # The format can be any of those, so we need to try them all
@@ -140,31 +150,66 @@ def parse_raw_date(date):
     return parsed_date
 
 
-def apply_date_filter(max_date):
-    elements = browser_lib.find_elements(
-        "css:ol[data-testid='search-results'] > li[data-testid='search-bodega-result']")
-    element = elements[-1]
-    date = element.find_element(By.CSS_SELECTOR,
-                                "span[data-testid='todays-date']").text  # type: str
+def results_length_change(browser: Selenium, current_length):
+    elements = browser.find_elements(locators.SEARCH_RESULTS_LOCATOR)
+    new_length = len(elements)
+    print("OLD LENGTH", current_length, "NEW LENGTH", new_length)
+    return new_length > current_length
 
-    print(parse_raw_date(date))
+
+def apply_date_filter(min_date):
+    elements = browser_lib.find_elements(
+        locators.SEARCH_RESULTS_LOCATOR)  # type: list[WebElement]
+    element = elements[-1]
+    length = len(elements)
+
+    date = element.find_element(By.CSS_SELECTOR,
+                                locators.NEWS_DATE_TEXT_LOCATOR).text  # type: str
+    date = parse_raw_date(date)
+
+    while date > min_date:
+        search_more_locator = locators.SEARCH_SHOW_MORE_BUTTON_LOCATOR
+        browser_lib.scroll_element_into_view(search_more_locator)
+        browser_lib.wait_and_click_button(search_more_locator)
+
+        WebDriverWait(browser_lib, 10).until(
+            lambda browser: results_length_change(browser, length))
+
+        elements = browser_lib.find_elements(locators.SEARCH_RESULTS_LOCATOR)
+        element = elements[-1]
+        length = len(elements)
+
+        raw_date = element.find_element(By.CSS_SELECTOR,
+                                        locators.NEWS_DATE_TEXT_LOCATOR).text  # type: str
+        date = parse_raw_date(raw_date)
+
+        print("LAST RESULT DATE", date)
 
 
 def get_news_raw_results():
     elements = browser_lib.find_elements(
-        "css:ol[data-testid='search-results'] > li[data-testid='search-bodega-result']")
+        locators.SEARCH_RESULTS_LOCATOR)  # type: list[WebElement]
 
     # Extract title, date, description, picture filename, count of search phrases in the title and description, True or False, depending on whether the title or description contains any amount of money
     results = []
     for element in elements:
         title = element.find_element(By.TAG_NAME,
-                                     "h4").text
-        date = element.find_element(By.CSS_SELECTOR,
-                                    "span[data-testid='todays-date']").text
-        description = element.find_element(By.CSS_SELECTOR,
-                                           "h4 + p").text
-        picture = element.find_element(By.CSS_SELECTOR,
-                                       "figure[aria-label='media'] img").get_attribute("src")
+                                     locators.NEWS_TITLE_LOCATOR).text
+        raw_date = element.find_element(By.CSS_SELECTOR,
+                                        locators.NEWS_DATE_TEXT_LOCATOR).text
+        date = parse_raw_date(raw_date)
+        date = date.strftime("%Y-%m-%d")
+
+        try:
+            description = element.find_element(By.CSS_SELECTOR,
+                                               locators.NEWS_DESCRIPTION_LOCATOR).text
+        except:
+            description = None
+        try:
+            picture = element.find_element(By.CSS_SELECTOR,
+                                           locators.NEWS_PICTURE_LOCATOR).get_attribute("src")
+        except:
+            picture = None
         count_of_search_phrases_in_title = 0
         count_of_search_phrases_in_description = 0
         contains_money = False
@@ -213,14 +258,14 @@ def main():
         inputs = get_inputs()
 
         open_the_website("https://www.nytimes.com/")
-
         click_agree_with_terms()
+        click_agree_with_cookie_policy()
 
         click_search_button()
         search_for(inputs["searchPhrase"])
 
         sort_by_latest()
-        apply_date_filter(inputs["maxDate"])
+        apply_date_filter(inputs["minDate"])
 
         raw_results = get_news_raw_results()
 

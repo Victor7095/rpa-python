@@ -2,16 +2,69 @@ from RPA.Browser.Selenium import Selenium
 from RPA.Robocorp.WorkItems import WorkItems
 from RPA.Excel.Files import Files
 from selenium.webdriver.common.by import By
+from datetime import datetime
 import os
+from dateutil.relativedelta import relativedelta
 
 browser_lib = Selenium()
 
 
+default_inputs = {
+    "searchPhrase": "russia",
+    "numberOfMonths": 12,
+    "categoryOrSections": "world"
+}
+
+
 def get_inputs():
-    wi = WorkItems()
-    payload = wi.get_input_work_item().payload
-    print(payload)
-    return [payload["searchPhrase"], payload["numberOfMonths"], payload["categoryOrSections"]]
+    inputs = {}
+    try:
+        wi = WorkItems()
+        payload = wi.get_input_work_item().payload
+        if "searchPhrase" not in payload:
+            raise Exception("Missing searchPhrase")
+        if "numberOfMonths" not in payload:
+            raise Exception("Missing numberOfMonths")
+        if "categoryOrSections" not in payload:
+            raise Exception("Missing categoryOrSections")
+
+        payload["numberOfMonths"] = int(payload["numberOfMonths"])
+        if payload["numberOfMonths"] < 0:
+            raise Exception("numberOfMonths cannot be negative")
+
+        inputs = {
+            "searchPhrase": payload["searchPhrase"],
+            "numberOfMonths": payload["numberOfMonths"],
+            "categoryOrSections": payload["categoryOrSections"]
+        }
+    except Exception as e:
+        print(e)
+        inputs = default_inputs
+        print('Using default inputs')
+        print(inputs)
+
+    max_date = calculate_maxdate(inputs["numberOfMonths"])
+    inputs["maxDate"] = max_date
+    return inputs
+
+
+def calculate_maxdate(number_of_months):
+    today = datetime.today()
+
+    # Subtract the number of months from today
+    max_date = today
+
+    # Set max date to the first day of the month
+    max_date = max_date.replace(day=1)
+
+    # Set max date time to 00:00:00
+    max_date = max_date.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    if number_of_months > 0:
+        # Subtract the number of months from today
+        max_date = today - relativedelta(months=number_of_months)
+
+    return max_date
 
 
 def open_the_website(url):
@@ -49,6 +102,54 @@ def sort_by_latest():
         "css:p[data-testid='SearchForm-status']", "Loading")
 
 
+def parse_raw_date(date):
+    print(date)
+    # List of possible date formats
+    # 'Jan. 7, 2022', 'Feb. 2, 2022', 'March 11, 2022, 'April 15, 2022' 'May 30, 2022', 'June 15, 2022', 'July 15, 2022', 'Aug. 15, 2022', 'Sept. 15, 2022', 'Oct. 15, 2022', 'Nov. 15, 2022', 'Dec. 15, 2022', 'Jan. 5', 'Feb. 5', 'March. 5', 'April 5', 'May 5', 'June 5', 'July 5', 'Aug. 5', 'Sept. 5', 'Oct. 5', 'Nov. 5', 'Dec. 5', '6h ago'
+    # The format can be any of those, so we need to try them all
+    # If the date is not in any of those formats, then we will just skip the date filter
+
+    parsed_date = None
+
+    # check if is '5h ago'
+    if date.endswith('h ago'):
+        hours = int(date.split('h')[0])
+        parsed_date = datetime.now() - relativedelta(hours=hours)
+    # extract month, day, and year
+    else:
+        year = datetime.now().year
+        # detect if date has year
+        if ',' in date:
+            date = date.split(',')
+            year = int(date[1].strip())
+            date = date[0].strip()
+
+        # extract day
+        date = date.split(' ')
+        day = int(date[1])
+        date = date[0]
+
+        # extract
+        date = date.replace('.', '')
+        months = ['Jan', 'Feb', 'March', 'April', 'May',
+                  'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec']
+        month = months.index(date) + 1
+
+        parsed_date = datetime(year, month, day)
+
+    return parsed_date
+
+
+def apply_date_filter(max_date):
+    elements = browser_lib.find_elements(
+        "css:ol[data-testid='search-results'] > li[data-testid='search-bodega-result']")
+    element = elements[-1]
+    date = element.find_element(By.CSS_SELECTOR,
+                                "span[data-testid='todays-date']").text  # type: str
+
+    print(parse_raw_date(date))
+
+
 def get_news_raw_results():
     elements = browser_lib.find_elements(
         "css:ol[data-testid='search-results'] > li[data-testid='search-bodega-result']")
@@ -56,19 +157,14 @@ def get_news_raw_results():
     # Extract title, date, description, picture filename, count of search phrases in the title and description, True or False, depending on whether the title or description contains any amount of money
     results = []
     for element in elements:
-        print(element)
         title = element.find_element(By.TAG_NAME,
                                      "h4").text
-        print(title)
         date = element.find_element(By.CSS_SELECTOR,
                                     "span[data-testid='todays-date']").text
-        print(date)
         description = element.find_element(By.CSS_SELECTOR,
                                            "h4 + p").text
-        print(description)
         picture = element.find_element(By.CSS_SELECTOR,
                                        "figure[aria-label='media'] img").get_attribute("src")
-        print(picture)
         count_of_search_phrases_in_title = 0
         count_of_search_phrases_in_description = 0
         contains_money = False
@@ -114,25 +210,26 @@ def write_excel_worksheet(path, worksheet, data):
 # Define a main() function that calls the other functions in order:
 def main():
     try:
-        get_inputs()
+        inputs = get_inputs()
 
         open_the_website("https://www.nytimes.com/")
 
         click_agree_with_terms()
 
         click_search_button()
-        search_for("russia")
+        search_for(inputs["searchPhrase"])
 
         sort_by_latest()
+        apply_date_filter(inputs["maxDate"])
 
         raw_results = get_news_raw_results()
 
         results = raw_data_to_list_of_dictionary(raw_results)
-        for result in results:
-            print(result)
 
         write_excel_worksheet("output/results.xlsx", "Fresh News", results)
     finally:
+        browser_lib.close_window()
+        browser_lib.close_browser()
         browser_lib.close_all_browsers()
 
 

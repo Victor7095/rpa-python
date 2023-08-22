@@ -1,5 +1,5 @@
+from time import sleep
 from RPA.Browser.Selenium import Selenium
-from RPA.Robocorp.WorkItems import WorkItems
 from RPA.Excel.Files import Files
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -11,65 +11,9 @@ import locators
 import os
 from dateutil.relativedelta import relativedelta
 
+from process_input import get_inputs
+
 browser_lib = Selenium()
-
-
-default_inputs = {
-    "searchPhrase": "russia",
-    "numberOfMonths": 1,
-    "categoryOrSections": "world"
-}
-
-
-def get_inputs():
-    inputs = {}
-    try:
-        wi = WorkItems()
-        payload = wi.get_input_work_item().payload
-        if "searchPhrase" not in payload:
-            raise Exception("Missing searchPhrase")
-        if "numberOfMonths" not in payload:
-            raise Exception("Missing numberOfMonths")
-        if "categoryOrSections" not in payload:
-            raise Exception("Missing categoryOrSections")
-
-        payload["numberOfMonths"] = int(payload["numberOfMonths"])
-        if payload["numberOfMonths"] < 0:
-            raise Exception("numberOfMonths cannot be negative")
-
-        inputs = {
-            "searchPhrase": payload["searchPhrase"],
-            "numberOfMonths": payload["numberOfMonths"],
-            "categoryOrSections": payload["categoryOrSections"]
-        }
-    except Exception as e:
-        print(e)
-        inputs = default_inputs
-        print('Using default inputs')
-        print(inputs)
-
-    min_date = calculate_mindate(inputs["numberOfMonths"])
-    inputs["minDate"] = min_date
-    return inputs
-
-
-def calculate_mindate(number_of_months):
-    today = datetime.today()
-
-    # Subtract the number of months from today
-    min_date = today
-
-    # Set min date to the first day of the month
-    min_date = min_date.replace(day=1)
-
-    # Set min date time to 00:00:00
-    min_date = min_date.replace(hour=0, minute=0, second=0, microsecond=0)
-
-    if number_of_months > 0:
-        # Subtract the number of months from today
-        min_date = today - relativedelta(months=number_of_months)
-
-    return min_date
 
 
 def open_the_website(url):
@@ -111,6 +55,30 @@ def sort_by_latest():
         locators.SORT_DROPDOWN_LOCATOR, "newest")
     browser_lib.wait_until_element_does_not_contain(
         locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
+
+
+def filter_by_sections(sections):
+    dropdown_locator = locators.SECTION_MULTISELECT_BUTTON_LOCATOR
+    browser_lib.wait_and_click_button(dropdown_locator)
+
+    for section in sections:
+        print("TRYING TO CLICK SECTION", section)
+        checkbox_locator = f"css:div[data-testid='section'] ul[data-testid='multi-select-dropdown-list'] li input[value='{section}']"
+        browser_lib.click_element_if_visible(checkbox_locator)
+        browser_lib.wait_until_element_does_not_contain(
+            locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
+
+
+def filter_by_categories(categories):
+    dropdown_locator = locators.CATEGORY_MULTISELECT_BUTTON_LOCATOR
+    browser_lib.wait_and_click_button(dropdown_locator)
+
+    for category in categories:
+        print("TRYING TO CLICK CATEGORY", category)
+        checkbox_locator = f"css:div[data-testid='type'] ul[data-testid='multi-select-dropdown-list'] li input[value='{category}']"
+        browser_lib.click_element_if_visible(checkbox_locator)
+        browser_lib.wait_until_element_does_not_contain(
+            locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
 
 
 def parse_raw_date(date):
@@ -265,12 +233,12 @@ def main():
         search_for(inputs["searchPhrase"])
 
         sort_by_latest()
+        filter_by_sections(inputs["sections"])
+        filter_by_categories(inputs["categories"])
         apply_date_filter(inputs["minDate"])
-
         raw_results = get_news_raw_results()
 
         results = raw_data_to_list_of_dictionary(raw_results)
-
         write_excel_worksheet("output/results.xlsx", "Fresh News", results)
     finally:
         browser_lib.close_window()

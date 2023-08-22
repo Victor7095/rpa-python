@@ -61,7 +61,7 @@ def filter_by_sections(sections):
     browser_lib.wait_and_click_button(dropdown_locator)
 
     options = browser_lib.find_elements(
-        "css:div[data-testid='section'] ul[data-testid='multi-select-dropdown-list'] li > label > span")  # type: list[WebElement]
+        locators.SECTION_MULTISELECT_OPTIONS_LOCATOR)  # type: list[WebElement]
     options_text = [option.text for option in options]
     # Find Last character before the first Number
     # Example: 'U.S. Politics' -> 'U.S. Politics'
@@ -221,9 +221,8 @@ def get_news_raw_results(search_phrase):
 
     return results
 
+
 # Define a main() function that calls the other functions in order:
-
-
 def main():
     try:
         inputs = get_inputs()

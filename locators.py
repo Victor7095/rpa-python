@@ -9,6 +9,7 @@ INPUT_FIELD_LOCATOR = "css:input[name='query']"
 
 SORT_DROPDOWN_LOCATOR = "css:select[data-testid='SearchForm-sortBy']"
 SECTION_MULTISELECT_BUTTON_LOCATOR = "css:div[data-testid='section'] button[data-testid='search-multiselect-button']"
+SECTION_MULTISELECT_OPTIONS_LOCATOR = "css:div[data-testid='section'] ul[data-testid='multi-select-dropdown-list'] li > label > span"
 CATEGORY_MULTISELECT_BUTTON_LOCATOR = "css:div[data-testid='type'] button[data-testid='search-multiselect-button']"
 
 SEARCH_FORM_STATUS_LOCATOR = "css:p[data-testid='SearchForm-status']"

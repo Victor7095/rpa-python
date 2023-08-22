@@ -1,19 +1,16 @@
-from time import sleep
 from RPA.Browser.Selenium import Selenium
-from RPA.Excel.Files import Files
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.remote.webelement import WebElement
 import re
-import urllib.request
 
 from datetime import datetime
 import locators
-import os
 from dateutil.relativedelta import relativedelta
 
 from process_input import get_inputs
+from save_results import save_results
 
 browser_lib = Selenium()
 
@@ -224,58 +221,9 @@ def get_news_raw_results(search_phrase):
 
     return results
 
-
-def download_pictures(results):
-    create_dir("output/images")
-    for (index, result) in enumerate(results):
-        picture_url = result[3]
-        if picture_url:
-            picture_filename = picture_url.split('/')[-1]
-            # remove query string from url
-            picture_filename = picture_filename.split('?')[0]
-            extension = picture_filename.split('.')[-1]
-
-            urllib.request.urlretrieve(
-                picture_url, f"output/images/{index}_{picture_filename}.{extension}")
-            result[3] = picture_filename
-
-    return results
-
-
-def raw_data_to_list_of_dictionary(raw_data):
-    # Convert raw data to a list of dictionaries
-    results = []
-    for row in raw_data:
-        results.append({
-            "title": row[0],
-            "date": row[1],
-            "description": row[2],
-            "picture": row[3],
-            "count_of_search_phrases_in_title": row[4],
-            "count_of_search_phrases_in_description": row[5],
-            "contains_money": row[6]
-        })
-
-    return results
-
-
-def create_dir(directory):
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-
-def write_excel_worksheet(path, worksheet, data):
-    create_dir("output")
-    lib = Files()
-    lib.create_workbook(path)
-    try:
-        lib.create_worksheet(worksheet, content=data, header=True)
-        lib.save_workbook()
-    finally:
-        lib.close_workbook()
-
-
 # Define a main() function that calls the other functions in order:
+
+
 def main():
     try:
         inputs = get_inputs()
@@ -292,10 +240,8 @@ def main():
         filter_by_categories(inputs["categories"])
         apply_date_filter(inputs["minDate"])
         raw_results = get_news_raw_results(inputs["searchPhrase"])
-        raw_results = download_pictures(raw_results)
 
-        results = raw_data_to_list_of_dictionary(raw_results)
-        write_excel_worksheet("output/results.xlsx", "Fresh News", results)
+        results = save_results(raw_results)
     finally:
         browser_lib.close_window()
         browser_lib.close_browser()

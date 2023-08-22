@@ -5,6 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.remote.webelement import WebElement
+import re
 
 from datetime import datetime
 import locators
@@ -61,10 +62,18 @@ def filter_by_sections(sections):
     dropdown_locator = locators.SECTION_MULTISELECT_BUTTON_LOCATOR
     browser_lib.wait_and_click_button(dropdown_locator)
 
+    options = browser_lib.find_elements(
+        "css:div[data-testid='section'] ul[data-testid='multi-select-dropdown-list'] li > label > span")  # type: list[WebElement]
+    options_text = [option.text for option in options]
+    # Find Last character before the first Number
+    # Example: 'U.S. Politics' -> 'U.S. Politics'
+    # Example: 'U.S. Politics 1' -> 'U.S. Politics'
+    options_text = [re.sub(r'\d.*', '', option) for option in options_text]
+    options_text = [option.lower() for option in options_text]
+
     for section in sections:
-        print("TRYING TO CLICK SECTION", section)
-        checkbox_locator = f"css:div[data-testid='section'] ul[data-testid='multi-select-dropdown-list'] li input[value='{section}']"
-        browser_lib.click_element_if_visible(checkbox_locator)
+        option_index = options_text.index(section.lower())
+        options[option_index].click()
         browser_lib.wait_until_element_does_not_contain(
             locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
 
@@ -135,12 +144,14 @@ def apply_date_filter(min_date):
                                 locators.NEWS_DATE_TEXT_LOCATOR).text  # type: str
     date = parse_raw_date(date)
 
-    while date > min_date:
-        search_more_locator = locators.SEARCH_SHOW_MORE_BUTTON_LOCATOR
+    search_more_locator = locators.SEARCH_SHOW_MORE_BUTTON_LOCATOR
+    button_exists = browser_lib.element_should_be_visible(search_more_locator)
+
+    while date > min_date and button_exists:
         browser_lib.scroll_element_into_view(search_more_locator)
         browser_lib.wait_and_click_button(search_more_locator)
 
-        WebDriverWait(browser_lib, 10).until(
+        WebDriverWait(browser_lib, 60).until(
             lambda browser: results_length_change(browser, length))
 
         elements = browser_lib.find_elements(locators.SEARCH_RESULTS_LOCATOR)
@@ -150,11 +161,32 @@ def apply_date_filter(min_date):
         raw_date = element.find_element(By.CSS_SELECTOR,
                                         locators.NEWS_DATE_TEXT_LOCATOR).text  # type: str
         date = parse_raw_date(raw_date)
+        button_exists = browser_lib.element_should_be_visible(
+            search_more_locator)
 
         print("LAST RESULT DATE", date)
 
 
-def get_news_raw_results():
+def check_if_contains_money(title, description):
+    contains_money = False
+    # Possible formats: $11.1 | $111,111.11 | 11 dollars | 11 USD
+    # create regex to match all of those
+    regexes = [
+        r"\$\d+\.?\d*",  # $11.1 | $111.11
+        r"\d+ dollars",  # 11 dollars
+        r"\d+ USD"  # 11 USD
+    ]
+    for regex in regexes:
+        if re.search(regex, title):
+            contains_money = True
+            break
+        if description and re.search(regex, description):
+            contains_money = True
+            break
+    return contains_money
+
+
+def get_news_raw_results(search_phrase):
     elements = browser_lib.find_elements(
         locators.SEARCH_RESULTS_LOCATOR)  # type: list[WebElement]
 
@@ -178,9 +210,14 @@ def get_news_raw_results():
                                            locators.NEWS_PICTURE_LOCATOR).get_attribute("src")
         except:
             picture = None
-        count_of_search_phrases_in_title = 0
+        count_of_search_phrases_in_title = title.count(search_phrase)
         count_of_search_phrases_in_description = 0
-        contains_money = False
+        if description:
+            count_of_search_phrases_in_description = description.count(
+                search_phrase)
+
+        contains_money = check_if_contains_money(title, description)
+
         results.append([title, date, description, picture,
                         count_of_search_phrases_in_title, count_of_search_phrases_in_description, contains_money])
 
@@ -236,7 +273,7 @@ def main():
         filter_by_sections(inputs["sections"])
         filter_by_categories(inputs["categories"])
         apply_date_filter(inputs["minDate"])
-        raw_results = get_news_raw_results()
+        raw_results = get_news_raw_results(inputs["searchPhrase"])
 
         results = raw_data_to_list_of_dictionary(raw_results)
         write_excel_worksheet("output/results.xlsx", "Fresh News", results)

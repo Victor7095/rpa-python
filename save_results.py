@@ -1,5 +1,5 @@
 import os
-import urllib3
+from urllib.request import urlretrieve
 from RPA.Excel.Files import Files
 
 
@@ -13,7 +13,7 @@ def download_pictures(results):
             picture_filename = picture_filename.split('?')[0]
             extension = picture_filename.split('.')[-1]
 
-            urllib3.request.urlretrieve(
+            urlretrieve(
                 picture_url, f"output/images/{index}_{picture_filename}.{extension}")
             result[3] = picture_filename
 

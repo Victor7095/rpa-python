@@ -183,11 +183,13 @@ def check_if_contains_money(title: str, description: str):
     return contains_money
 
 
-def get_news_raw_results(search_phrase: str):
+def get_news_raw_results(search_phrase: str, min_date: datetime):
     elements = browser_lib.find_elements(
         locators.SEARCH_RESULTS_LOCATOR)  # type: list[WebElement]
 
-    # Extract title, date, description, picture filename, count of search phrases in the title and description, True or False, depending on whether the title or description contains any amount of money
+    # Extract title, date, description, picture filename,
+    # count of search phrases in the title and description,
+    # True or False, depending on whether the title or description contains any amount of money
     results = []
     for element in elements:
         title = element.find_element(By.TAG_NAME,
@@ -195,6 +197,11 @@ def get_news_raw_results(search_phrase: str):
         raw_date = element.find_element(By.CSS_SELECTOR,
                                         locators.NEWS_DATE_TEXT_LOCATOR).text
         date = parse_raw_date(raw_date)
+
+        # If the date is older than the min date, then we can stop
+        if date > min_date:
+            break
+
         date = date.strftime("%Y-%m-%d")
 
         try:
@@ -237,7 +244,8 @@ def main():
         filter_by_sections(inputs["sections"])
         filter_by_categories(inputs["categories"])
         apply_date_filter(inputs["minDate"])
-        raw_results = get_news_raw_results(inputs["searchPhrase"])
+        raw_results = get_news_raw_results(
+            inputs["searchPhrase"], inputs["minDate"])
 
         results = save_results(raw_results)
     finally:

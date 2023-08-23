@@ -4,7 +4,7 @@ from RPA.Excel.Files import Files
 
 
 def download_pictures(results):
-    create_dir("output/images")
+    create_dir("output")
     for (index, result) in enumerate(results):
         picture_url = result[3]
         if picture_url:
@@ -14,7 +14,7 @@ def download_pictures(results):
             extension = picture_filename.split('.')[-1]
 
             urlretrieve(
-                picture_url, f"output/images/{index}_{picture_filename}.{extension}")
+                picture_url, f"output/{index}_{picture_filename}.{extension}")
             result[3] = picture_filename
 
     return results

@@ -15,7 +15,7 @@ from save_results import save_results
 browser_lib = Selenium()
 
 
-def open_the_website(url):
+def open_the_website(url: str):
     browser_lib.open_available_browser(
         url, options={"arguments": ["window-size=1920,1080"]})
 
@@ -43,7 +43,7 @@ def click_button(button_locator):
     browser_lib.click_button(button_locator)
 
 
-def search_for(term):
+def search_for(term: str):
     input_field = locators.INPUT_FIELD_LOCATOR
     browser_lib.input_text(input_field, term)
     browser_lib.press_keys(input_field, "ENTER")
@@ -56,7 +56,7 @@ def sort_by_latest():
         locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
 
 
-def filter_by_sections(sections):
+def filter_by_sections(sections: list[str]):
     dropdown_locator = locators.SECTION_MULTISELECT_BUTTON_LOCATOR
     browser_lib.wait_and_click_button(dropdown_locator)
 
@@ -70,13 +70,14 @@ def filter_by_sections(sections):
     options_text = [option.lower() for option in options_text]
 
     for section in sections:
+        print("TRYING TO CLICK SECTION", section)
         option_index = options_text.index(section.lower())
         options[option_index].click()
         browser_lib.wait_until_element_does_not_contain(
             locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
 
 
-def filter_by_categories(categories):
+def filter_by_categories(categories: list[str]):
     dropdown_locator = locators.CATEGORY_MULTISELECT_BUTTON_LOCATOR
     browser_lib.wait_and_click_button(dropdown_locator)
 
@@ -88,7 +89,7 @@ def filter_by_categories(categories):
             locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
 
 
-def parse_raw_date(date):
+def parse_raw_date(date: str):
     # List of possible date formats
     # 'Jan. 7, 2022', 'Feb. 2, 2022', 'March 11, 2022, 'April 15, 2022' 'May 30, 2022', 'June 15, 2022', 'July 15, 2022', 'Aug. 15, 2022', 'Sept. 15, 2022', 'Oct. 15, 2022', 'Nov. 15, 2022', 'Dec. 15, 2022', 'Jan. 5', 'Feb. 5', 'March. 5', 'April 5', 'May 5', 'June 5', 'July 5', 'Aug. 5', 'Sept. 5', 'Oct. 5', 'Nov. 5', 'Dec. 5', '6h ago'
     # The format can be any of those, so we need to try them all
@@ -128,11 +129,10 @@ def parse_raw_date(date):
 def results_length_change(browser: Selenium, current_length):
     elements = browser.find_elements(locators.SEARCH_RESULTS_LOCATOR)
     new_length = len(elements)
-    print("OLD LENGTH", current_length, "NEW LENGTH", new_length)
     return new_length > current_length
 
 
-def apply_date_filter(min_date):
+def apply_date_filter(min_date: datetime):
     elements = browser_lib.find_elements(
         locators.SEARCH_RESULTS_LOCATOR)  # type: list[WebElement]
     element = elements[-1]
@@ -143,7 +143,7 @@ def apply_date_filter(min_date):
     date = parse_raw_date(date)
 
     search_more_locator = locators.SEARCH_SHOW_MORE_BUTTON_LOCATOR
-    button_exists = browser_lib.element_should_be_visible(search_more_locator)
+    button_exists = len(browser_lib.find_elements(search_more_locator)) > 0
 
     while date > min_date and button_exists:
         browser_lib.scroll_element_into_view(search_more_locator)
@@ -159,13 +159,12 @@ def apply_date_filter(min_date):
         raw_date = element.find_element(By.CSS_SELECTOR,
                                         locators.NEWS_DATE_TEXT_LOCATOR).text  # type: str
         date = parse_raw_date(raw_date)
-        button_exists = browser_lib.element_should_be_visible(
-            search_more_locator)
+        button_exists = len(browser_lib.find_elements(search_more_locator)) > 0
 
         print("LAST RESULT DATE", date)
 
 
-def check_if_contains_money(title, description):
+def check_if_contains_money(title: str, description: str):
     contains_money = False
     # Possible formats: $11.1 | $111,111.11 | 11 dollars | 11 USD
     # create regex to match all of those
@@ -184,7 +183,7 @@ def check_if_contains_money(title, description):
     return contains_money
 
 
-def get_news_raw_results(search_phrase):
+def get_news_raw_results(search_phrase: str):
     elements = browser_lib.find_elements(
         locators.SEARCH_RESULTS_LOCATOR)  # type: list[WebElement]
 

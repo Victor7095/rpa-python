@@ -55,7 +55,7 @@ def validate_provided_inputs():
     }
 
 
-def calculate_mindate(number_of_months):
+def calculate_mindate(number_of_months: int):
     today = datetime.today()
 
     # Subtract the number of months from today
@@ -74,7 +74,7 @@ def calculate_mindate(number_of_months):
     return min_date
 
 
-def extract_categories_and_sections(categories_and_sections):
+def extract_categories_and_sections(categories_and_sections: str):
     categories_and_sections = categories_and_sections.split(";")
 
     categories = None

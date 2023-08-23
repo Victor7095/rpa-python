@@ -19,7 +19,8 @@ def get_inputs():
         inputs = default_inputs
         print('Using default inputs')
 
-    print(inputs["categoryOrSections"])
+    print("CATEGORIES AND SECTIONS: ", inputs["categoryOrSections"])
+
     categories_and_sections = extract_categories_and_sections(
         inputs["categoryOrSections"])
 

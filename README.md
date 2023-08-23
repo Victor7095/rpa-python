@@ -8,7 +8,7 @@ The parameters must follow the format:
 
 ```json
 {
-    "searchPhrase": "russia", //any word or phrase
+    "searchPhrase": "python", //any word or phrase
     "numberOfMonths": 1,      //number of months to search
     "categoryOrSections": "categories=article,interactivegraphics,video;sections=business,opinion,arts"
 }

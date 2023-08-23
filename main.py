@@ -199,7 +199,7 @@ def get_news_raw_results(search_phrase: str, min_date: datetime):
         date = parse_raw_date(raw_date)
 
         # If the date is older than the min date, then we can stop
-        if date > min_date:
+        if date < min_date:
             break
 
         date = date.strftime("%Y-%m-%d")

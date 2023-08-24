@@ -69,12 +69,17 @@ def filter_by_sections(sections: list[str]):
     options_text = [re.sub(r'\d.*', '', option) for option in options_text]
     options_text = [option.lower() for option in options_text]
 
+    print("AVAILABLE SECTIONS:", options_text)
+
     for section in sections:
-        print("TRYING TO CLICK SECTION", section)
-        option_index = options_text.index(section.lower())
-        options[option_index].click()
-        browser_lib.wait_until_element_does_not_contain(
-            locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
+        print("TRYING TO CLICK SECTION:", section)
+        try:
+            option_index = options_text.index(section.lower())
+            options[option_index].click()
+            browser_lib.wait_until_element_does_not_contain(
+                locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
+        except ValueError:
+            print("SECTION NOT FOUND:", section)
 
 
 def filter_by_categories(categories: list[str]):
@@ -82,11 +87,15 @@ def filter_by_categories(categories: list[str]):
     browser_lib.wait_and_click_button(dropdown_locator)
 
     for category in categories:
-        print("TRYING TO CLICK CATEGORY", category)
-        checkbox_locator = f"css:div[data-testid='type'] ul[data-testid='multi-select-dropdown-list'] li input[value='{category}']"
-        browser_lib.click_element_if_visible(checkbox_locator)
-        browser_lib.wait_until_element_does_not_contain(
-            locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
+        try:
+            print("TRYING TO CLICK CATEGORY", category)
+            checkbox_locator = f"css:div[data-testid='type'] ul[data-testid='multi-select-dropdown-list'] li input[value='{category}']"
+            browser_lib.click_element_if_visible(checkbox_locator)
+            browser_lib.wait_until_element_does_not_contain(
+                locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
+        except Exception as e:
+            print("ERROR APPLYING CATEGORY FILTER:", category)
+            print(e)
 
 
 def parse_raw_date(date: str):
@@ -146,10 +155,11 @@ def apply_date_filter(min_date: datetime):
     button_exists = len(browser_lib.find_elements(search_more_locator)) > 0
 
     while date > min_date and button_exists:
-        browser_lib.scroll_element_into_view(search_more_locator)
+        while not browser_lib.is_element_visible(search_more_locator):
+            browser_lib.scroll_element_into_view(search_more_locator)
         browser_lib.wait_and_click_button(search_more_locator)
 
-        WebDriverWait(browser_lib, 60).until(
+        WebDriverWait(browser_lib, 60, poll_frequency=0.1).until(
             lambda browser: results_length_change(browser, length))
 
         elements = browser_lib.find_elements(locators.SEARCH_RESULTS_LOCATOR)
@@ -214,16 +224,21 @@ def get_news_raw_results(search_phrase: str, min_date: datetime):
                                            locators.NEWS_PICTURE_LOCATOR).get_attribute("src")
         except:
             picture = None
-        count_of_search_phrases_in_title = title.count(search_phrase)
-        count_of_search_phrases_in_description = 0
+
+        search_phrase = search_phrase.lower()
+        title_lowercase = title.lower()
+        description_lowercase = description.lower() if description else None
+
+        count_in_title = title_lowercase.count(search_phrase)
+        count_in_description = 0
         if description:
-            count_of_search_phrases_in_description = description.count(
+            count_in_description = description_lowercase.count(
                 search_phrase)
 
         contains_money = check_if_contains_money(title, description)
 
         results.append([title, date, description, picture,
-                        count_of_search_phrases_in_title, count_of_search_phrases_in_description, contains_money])
+                        count_in_title, count_in_description, contains_money])
 
     return results
 

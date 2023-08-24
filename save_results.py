@@ -9,13 +9,16 @@ def download_pictures(results: list):
     for (index, result) in enumerate(results):
         picture_url = result[3]
         if picture_url:
-            picture_filename = picture_url.split('/')[-1]
-            # remove query string from url
-            picture_filename = picture_filename.split('?')[0]
-
-            urlretrieve(
-                picture_url, f"output/{index}_{picture_filename}")
-            result[3] = picture_filename
+            try:
+                picture_filename = picture_url.split('/')[-1]
+                # remove query string from url
+                picture_filename = picture_filename.split('?')[0]
+                picture_filename = f"{index + 1}_{picture_filename}"
+                urlretrieve(
+                    picture_url, f"output/{picture_filename}")
+                result[3] = picture_filename
+            except:
+                result[3] = None
 
     return results
 

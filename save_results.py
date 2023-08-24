@@ -12,10 +12,9 @@ def download_pictures(results: list):
             picture_filename = picture_url.split('/')[-1]
             # remove query string from url
             picture_filename = picture_filename.split('?')[0]
-            extension = picture_filename.split('.')[-1]
 
             urlretrieve(
-                picture_url, f"output/{index}_{picture_filename}.{extension}")
+                picture_url, f"output/{index}_{picture_filename}")
             result[3] = picture_filename
 
     return results

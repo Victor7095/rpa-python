@@ -4,8 +4,8 @@ from dateutil.relativedelta import relativedelta
 
 
 default_inputs = {
-    "searchPhrase": "python",
-    "numberOfMonths": 1,
+    "searchPhrase": "Python",
+    "numberOfMonths": 2,
     "categoryOrSections": "categories=article,interactivegraphics,video;sections=business,opinion,arts"
 }
 

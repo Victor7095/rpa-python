@@ -6,11 +6,11 @@ from selenium.webdriver.remote.webelement import WebElement
 import re
 
 from datetime import datetime
-import locators
+from app.locators import locators
 from dateutil.relativedelta import relativedelta
 
-from process_input import get_inputs
-from save_results import save_results
+from app.process_input import get_inputs
+from app.save_results import save_results
 
 browser_lib = Selenium()
 

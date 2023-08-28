@@ -1,5 +1,3 @@
-
-
 COMPLICANCE_OVERLAY_LOCATOR = "css:div#complianceOverlay"
 COMPLICANCE_OVERLAY_BUTTON_LOCATOR = "css:div#complianceOverlay button[type='button']"
 ACCEPT_COOKIES_BUTTON_LOCATOR = "css:div[data-testid='gdpr-dock'] button[data-testid='GDPR-accept']"

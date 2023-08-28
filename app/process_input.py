@@ -35,7 +35,7 @@ class ProcessInput:
 
         #  Try loading inputs from work item
         try:
-            inputs = self.validate_provided_inputs()
+            inputs = self.load_inputs_from_work_item()
         except Exception as e:
             self.logger.error(
                 "Using .env variables because of error: " + str(e))
@@ -48,7 +48,8 @@ class ProcessInput:
         return inputs
 
     # Validate inputs provided by work item
-    def validate_provided_inputs(self):
+    def load_inputs_from_work_item(self):
+        self.logger.info("Checking work item for inputs")
         wi = WorkItems()
         payload = wi.get_input_work_item().payload
         if "searchPhrase" not in payload:

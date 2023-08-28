@@ -1,8 +1,7 @@
 from dotenv import load_dotenv
-import structlog
 from app.bot_pipeline import BotPipeline
 from app.process_input import ProcessInput
-from app.save_results import save_results
+from app.save_results import Output
 
 
 load_dotenv("../")
@@ -13,8 +12,7 @@ def main():
     inputs = ProcessInput().get_inputs()
     bot_pipeline = BotPipeline(inputs)
     raw_results = bot_pipeline.run()
-    return
-    save_results(raw_results)
+    Output.save_results(raw_results)
 
 
 # Call the main() function, checking that we are running as a stand-alone script:

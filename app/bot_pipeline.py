@@ -64,17 +64,17 @@ class BotPipeline:
         options_text = [re.sub(r'\d.*', '', option) for option in options_text]
         options_text = [option.lower() for option in options_text]
 
-        self.logger.info(f"AVAILABLE SECTIONS: {options_text}")
+        self.logger.info(f"Available sections: {options_text}")
 
         for section in sections:
-            self.logger.info(f"APPLYING SECTION FILTER: {section}")
+            self.logger.info(f"Applying section filter: {section}")
             try:
                 option_index = options_text.index(section.lower())
                 options[option_index].click()
                 self.browser_lib.wait_until_element_does_not_contain(
                     locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
             except ValueError:
-                self.logger.info(f"SECTION NOT FOUND: {section}")
+                self.logger.info(f"Section not found: {section}")
 
     def filter_by_categories(self, categories: list[str]):
         dropdown_locator = locators.CATEGORY_MULTISELECT_BUTTON_LOCATOR
@@ -82,14 +82,14 @@ class BotPipeline:
 
         for category in categories:
             try:
-                self.logger.info(f"APPLYING CATEGORY FILTER: {category}")
+                self.logger.info(f"Applying category filter: {category}")
                 checkbox_locator = f"css:div[data-testid='type'] ul[data-testid='multi-select-dropdown-list'] li input[value='{category}']"
                 self.browser_lib.click_element_if_visible(checkbox_locator)
                 self.browser_lib.wait_until_element_does_not_contain(
                     locators.SEARCH_FORM_STATUS_LOCATOR, "Loading")
             except Exception as e:
                 self.logger.error(
-                    f"ERROR APPLYING CATEGORY FILTER: {category}")
+                    f"Error applying category filter: {category}")
                 self.logger.exception(e)
 
     def parse_raw_date(self, date: str):
@@ -148,7 +148,7 @@ class BotPipeline:
             self.browser_lib.find_elements(search_more_locator)) > 0
 
         while date > min_date and button_exists:
-            self.logger.info("LOADING MORE RESULTS")
+            self.logger.info("Loading more results")
             while not self.browser_lib.is_element_visible(search_more_locator):
                 self.browser_lib.scroll_element_into_view(search_more_locator)
             self.browser_lib.wait_and_click_button(search_more_locator)
@@ -167,7 +167,7 @@ class BotPipeline:
             button_exists = len(
                 self.browser_lib.find_elements(search_more_locator)) > 0
 
-            self.logger.info(f"LAST RESULT DATE: {date}")
+            self.logger.info(f"Last result date: {date}")
 
     def check_if_contains_money(self, title: str, description: str):
         contains_money = False

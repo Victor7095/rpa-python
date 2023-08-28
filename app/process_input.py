@@ -7,7 +7,7 @@ import structlog
 
 
 class ProcessInput:
-    logger = structlog.get_logger()
+    logger: structlog.PrintLogger = structlog.get_logger()
 
     @staticmethod
     def default_inputs():

@@ -1,96 +1,84 @@
+import os
 from RPA.Robocorp.WorkItems import WorkItems
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import logging
 
 
-default_inputs = {
-    "searchPhrase": "Python",
-    "numberOfMonths": 2,
-    "categoryOrSections": "categories=article,interactivegraphics,video;sections=business,opinion,arts"
-}
+class ProcessInput:
+    @staticmethod
+    def default_inputs():
+        return {
+            "searchPhrase": "Python",
+            "numberOfMonths": 2,
+            "categories": ["article", "interactivegraphics", "video"],
+            "sections": ["business", "opinion", "arts"]
+        }
 
+    def get_inputs(self):
+        # load inputs from .env file
+        try:
+            inputs = {
+                "searchPhrase": os.environ.get("searchPhrase"),
+                "numberOfMonths": int(os.environ.get("numberOfMonths")),
+                "categories": os.environ.get("categories").split(","),
+                "sections": os.environ.get("sections").split(",")
+            }
+        except Exception as e:
+            logging.error("Using default inputs because of error: " + str(e))
+            inputs = self.default_inputs()
 
-def get_inputs():
-    inputs = {}
-    try:
-        inputs = validate_provided_inputs()
-    except Exception as e:
-        print(e)
-        inputs = default_inputs
-        print('Using default inputs')
+        #  Try loading inputs from work item
+        try:
+            inputs = self.validate_provided_inputs()
+        except Exception as e:
+            logging.error("Using .env variables because of error: " + str(e))
 
-    print("CATEGORIES AND SECTIONS: ", inputs["categoryOrSections"])
+        # Calculate minumim date
+        min_date = self.calculate_mindate(inputs["numberOfMonths"])
+        inputs["minDate"] = min_date
 
-    categories_and_sections = extract_categories_and_sections(
-        inputs["categoryOrSections"])
+        logging.debug(inputs)
+        return inputs
 
-    inputs["categories"] = categories_and_sections["categories"]
-    inputs["sections"] = categories_and_sections["sections"]
+    # Validate inputs provided by work item
+    def validate_provided_inputs(self):
+        wi = WorkItems()
+        payload = wi.get_input_work_item().payload
+        if "searchPhrase" not in payload:
+            raise Exception("Missing searchPhrase")
+        if "numberOfMonths" not in payload:
+            raise Exception("Missing numberOfMonths")
+        if "categories" not in payload:
+            raise Exception("Missing categories")
+        if "sections" not in payload:
+            raise Exception("Missing sections")
 
-    min_date = calculate_mindate(inputs["numberOfMonths"])
-    inputs["minDate"] = min_date
+        payload["numberOfMonths"] = int(payload["numberOfMonths"])
+        if payload["numberOfMonths"] < 0:
+            raise Exception("numberOfMonths cannot be negative")
 
-    print(inputs)
-    return inputs
+        return {
+            "searchPhrase": payload["searchPhrase"],
+            "numberOfMonths": payload["numberOfMonths"],
+            "categoryOrSections": payload["categoryOrSections"]
+        }
 
+    # Min Date is oldest date to search for
+    def calculate_mindate(self, number_of_months: int):
+        today = datetime.today()
 
-def validate_provided_inputs():
-    wi = WorkItems()
-    payload = wi.get_input_work_item().payload
-    if "searchPhrase" not in payload:
-        raise Exception("Missing searchPhrase")
-    if "numberOfMonths" not in payload:
-        raise Exception("Missing numberOfMonths")
-    if "categoryOrSections" not in payload:
-        raise Exception("Missing categoryOrSections")
-
-    payload["numberOfMonths"] = int(payload["numberOfMonths"])
-    if payload["numberOfMonths"] < 0:
-        raise Exception("numberOfMonths cannot be negative")
-
-    return {
-        "searchPhrase": payload["searchPhrase"],
-        "numberOfMonths": payload["numberOfMonths"],
-        "categoryOrSections": payload["categoryOrSections"]
-    }
-
-
-def calculate_mindate(number_of_months: int):
-    today = datetime.today()
-
-    # Subtract the number of months from today
-    min_date = today
-
-    # Set min date to the first day of the month
-    min_date = min_date.replace(day=1)
-
-    # Set min date time to 00:00:00
-    min_date = min_date.replace(hour=0, minute=0, second=0, microsecond=0)
-
-    if number_of_months > 0:
         # Subtract the number of months from today
-        min_date = today - relativedelta(months=number_of_months)
+        min_date = today
 
-    return min_date
+        # Set min date to the first day of the month
+        min_date = min_date.replace(day=1)
 
+        # Set min date time to 00:00:00
+        min_date = min_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
-def extract_categories_and_sections(categories_and_sections: str):
-    categories_and_sections = categories_and_sections.split(";")
+        if number_of_months > 0:
+            # Subtract the number of months from today
+            min_date = today - relativedelta(months=number_of_months)
 
-    categories = None
-    sections = None
-    if len(categories_and_sections) == 1:
-        categories_and_sections = categories_and_sections[0]
-        if categories_and_sections.startswith("categories="):
-            categories = categories_and_sections.split("=")[1]
-        elif categories_and_sections.startswith("sections="):
-            sections = categories_and_sections.split("=")[1]
-
-    if len(categories_and_sections) == 2:
-        categories = categories_and_sections[0].split("=")[1]
-        sections = categories_and_sections[1].split("=")[1]
-
-    return {
-        "categories": categories.split(",") if categories else None,
-        "sections": sections.split(",") if sections else None
-    }
+        return min_date

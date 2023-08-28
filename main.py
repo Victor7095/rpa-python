@@ -6,11 +6,15 @@ from selenium.webdriver.remote.webelement import WebElement
 import re
 
 from datetime import datetime
-from app.locators import locators
+from app import locators
 from dateutil.relativedelta import relativedelta
 
-from app.process_input import get_inputs
+from app.process_input import ProcessInput
 from app.save_results import save_results
+from dotenv import load_dotenv
+
+
+load_dotenv("../")
 
 browser_lib = Selenium()
 
@@ -246,7 +250,7 @@ def get_news_raw_results(search_phrase: str, min_date: datetime):
 # Define a main() function that calls the other functions in order:
 def main():
     try:
-        inputs = get_inputs()
+        inputs = ProcessInput().get_inputs()
 
         open_the_website("https://www.nytimes.com/")
         click_agree_with_terms()

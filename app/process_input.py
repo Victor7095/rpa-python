@@ -67,7 +67,8 @@ class ProcessInput:
         return {
             "searchPhrase": payload["searchPhrase"],
             "numberOfMonths": payload["numberOfMonths"],
-            "categoryOrSections": payload["categoryOrSections"]
+            "categories": payload["categories"],
+            "sections": payload["sections"]
         }
 
     # Min Date is oldest date to search for

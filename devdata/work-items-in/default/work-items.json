@@ -3,7 +3,8 @@
     "payload": {
       "searchPhrase": "Python",
       "numberOfMonths": 3013,
-      "categoryOrSections": ["Art"]
+      "categories": "article",
+      "sections": "business"
     },
     "files": {}
   }

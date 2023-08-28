@@ -1,11 +1,14 @@
 import os
+from venv import logger
 from RPA.Robocorp.WorkItems import WorkItems
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import logging
+import structlog
 
 
 class ProcessInput:
+    logger = structlog.get_logger()
+
     @staticmethod
     def default_inputs():
         return {
@@ -16,6 +19,7 @@ class ProcessInput:
         }
 
     def get_inputs(self):
+        self.logger.info("Getting inputs")
         # load inputs from .env file
         try:
             inputs = {
@@ -25,20 +29,22 @@ class ProcessInput:
                 "sections": os.environ.get("sections").split(",")
             }
         except Exception as e:
-            logging.error("Using default inputs because of error: " + str(e))
+            self.logger.error(
+                "Using default inputs because of error: " + str(e))
             inputs = self.default_inputs()
 
         #  Try loading inputs from work item
         try:
             inputs = self.validate_provided_inputs()
         except Exception as e:
-            logging.error("Using .env variables because of error: " + str(e))
+            self.logger.error(
+                "Using .env variables because of error: " + str(e))
 
         # Calculate minumim date
         min_date = self.calculate_mindate(inputs["numberOfMonths"])
         inputs["minDate"] = min_date
 
-        logging.debug(inputs)
+        self.logger.info(f"Inputs: {inputs}")
         return inputs
 
     # Validate inputs provided by work item

@@ -13,3 +13,4 @@ dependencies:
     # Define pip packages here.
     # https://pypi.org/
     - rpaframework==26.0.0 # https://rpaframework.org/releasenotes.html
+    - structlog==23.1.0

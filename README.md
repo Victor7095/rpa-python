@@ -10,7 +10,8 @@ The parameters must follow the format:
 {
     "searchPhrase": "python", //any word or phrase
     "numberOfMonths": 1,      //number of months to search
-    "categoryOrSections": "categories=article,interactivegraphics,video;sections=business,opinion,arts"
+    "categories": "article,interactivegraphics,video",
+    "sections": "business,opinion,arts"
 }
 
 ```
@@ -28,8 +29,8 @@ pip install -r requirements.txt
 
 ## Usage
 
-1. Open the `process_input.py` file in a text editor or IDE.
-2. Set the `default_inputs` values to the phrase and news category or sections you want to search for.
+1. Open the `.env` file in a text editor or IDE.
+2. Set the values to the phrase and news category or sections you want to search for.
 3. Save the file.
 4. Open a terminal or command prompt and navigate to the directory where you cloned or extracted the repository.
 5. Run the following command to start the bot:
